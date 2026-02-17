@@ -4,8 +4,25 @@ void main() {
   runApp(const MyApp());
 }
 
-void test(List<String>? names) {
-  names?.add('Aldi');
+class Cat extends Object {
+  final String name;
+  Cat(this.name);
+
+  @override
+  bool operator ==(covariant Cat other) => other.name == name;
+
+  @override
+  int get hashCode => name.hashCode;
+}
+
+void test() {
+  final cat1 = Cat('Aldi');
+  final cat2 = Cat('Aldi');
+  if (cat1 == cat2) {
+    print("They are equal");
+  } else {
+    print("They are not equal");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -14,7 +31,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    test(null);
+    test();
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
