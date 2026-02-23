@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "322774195223",
+    "project_id": "belajar-flutter-mpl",
+    "storage_bucket": "belajar-flutter-mpl.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:322774195223:android:abeddd9ab16c75fb311052",
+        "android_client_info": {
+          "package_name": "com.example.freecodecamp_tutorial_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXPKlKqAvj_27OVVcb1hU2in21azGrOuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

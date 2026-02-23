@@ -4,35 +4,12 @@ void main() {
   runApp(const MyApp());
 }
 
-class PairOfStrings {
-  final String value1;
-  final String value2;
-  PairOfStrings(this.value1, this.value2);
-}
-
-class PairOfIntegers {
-  final int value1;
-  final int value2;
-  PairOfIntegers(this.value1, this.value2);
-}
-
-class Pair<A, B> {
-  final A value1;
-  final B value2;
-  Pair(this.value1, this.value2);
-}
-
-void test() {
-  final names = Pair('Aldi', 20);
-}
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    test();
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
