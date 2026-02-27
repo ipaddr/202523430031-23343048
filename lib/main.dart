@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:freecodecamp_tutorial_flutter/services/auth/auth_service.dart';
 import 'package:freecodecamp_tutorial_flutter/views/login_view.dart';
-import 'package:freecodecamp_tutorial_flutter/views/notes_view.dart';
+import 'package:freecodecamp_tutorial_flutter/views/notes/notes_view.dart';
 import 'package:freecodecamp_tutorial_flutter/views/register_view.dart';
 import 'package:freecodecamp_tutorial_flutter/views/verify_email_view.dart';
 import 'package:freecodecamp_tutorial_flutter/constants/routes.dart';
@@ -19,6 +19,7 @@ void main() {
         registerRoute: (context) => const RegisterView(),
         notesRoute: (context) => const NotesView(),
         verifyEmailRoute: (context) => const VerifyEmailView(),
+        newNoteRoute: (context) => const NewNoteView();
       },
     ),
   );
