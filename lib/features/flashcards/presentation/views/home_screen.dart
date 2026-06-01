@@ -303,14 +303,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const Spacer(),
                             TextButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => AllFlashcardsScreen(
-                                      repository: widget.repository,
-                                    ),
-                                  ),
-                                );
+                              onPressed: () async {
+                                final changed = await Navigator.of(context)
+                                    .push<bool>(
+                                      MaterialPageRoute(
+                                        builder: (_) => AllFlashcardsScreen(
+                                          repository: widget.repository,
+                                        ),
+                                      ),
+                                    );
+                                if (changed == true) {
+                                  setState(() {
+                                    _decksFuture = widget.repository
+                                        .fetchAllDecks();
+                                  });
+                                }
                               },
                               style: TextButton.styleFrom(
                                 foregroundColor: theme.colorScheme.primary,

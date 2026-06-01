@@ -1,10 +1,10 @@
 import "package:flutter/material.dart";
 
 import "../../domain/entities/flashcard_deck_entity.dart";
-import "../../domain/entities/flashcard_entity.dart";
 import "../../domain/repositories/flashcard_deck_repository.dart";
 import "flashcard_viewer_screen.dart";
 import "../widgets/brand_app_bar.dart";
+import "../widgets/ui_components.dart";
 
 class AllFlashcardsScreen extends StatefulWidget {
   final FlashcardDeckRepository repository;
@@ -17,6 +17,7 @@ class AllFlashcardsScreen extends StatefulWidget {
 
 class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
   late Future<List<FlashcardDeckEntity>> _decksFuture;
+  bool _changed = false;
 
   @override
   void initState() {
@@ -26,191 +27,154 @@ class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: BrandAppBar(
-        title: "All Flashcards",
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.of(context).pop(_changed);
+        return false;
+      },
+      child: Scaffold(
+        appBar: BrandAppBar(
+          title: "All Flashcards",
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).pop(_changed),
+            icon: const Icon(Icons.arrow_back_rounded),
+          ),
         ),
-      ),
-      body: FutureBuilder<List<FlashcardDeckEntity>>(
-        future: _decksFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        body: FutureBuilder<List<FlashcardDeckEntity>>(
+          future: _decksFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return _EmptyState(
-              icon: Icons.error_outline_rounded,
-              title: "Gagal memuat flashcard",
-              message: snapshot.error.toString(),
+            if (snapshot.hasError) {
+              return _EmptyState(
+                icon: Icons.error_outline_rounded,
+                title: "Gagal memuat flashcard",
+                message: snapshot.error.toString(),
+              );
+            }
+
+            final decks = snapshot.data ?? <FlashcardDeckEntity>[];
+            final totalFlashcards = decks.fold<int>(
+              0,
+              (prev, deck) => prev + deck.flashcards.length,
             );
-          }
 
-          final decks = snapshot.data ?? <FlashcardDeckEntity>[];
-          final entries = _flattenFlashcards(decks);
-          final totalFlashcards = entries.length;
+            if (decks.isEmpty) {
+              return const _EmptyState(
+                icon: Icons.style_outlined,
+                title: "Belum ada flashcard",
+                message:
+                    "Buat deck pertama dari halaman utama, lalu semua flashcard akan muncul di sini.",
+              );
+            }
 
-          if (entries.isEmpty) {
-            return const _EmptyState(
-              icon: Icons.style_outlined,
-              title: "Belum ada flashcard",
-              message:
-                  "Buat deck pertama dari halaman utama, lalu semua flashcard akan muncul di sini.",
-            );
-          }
+            final size = MediaQuery.sizeOf(context);
+            final crossAxisCount = size.width >= 900 ? 3 : 1;
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
-                  children: [
-                    _StatChip(label: "Decks", value: decks.length.toString()),
-                    const SizedBox(width: 12),
-                    _StatChip(
-                      label: "Flashcards",
-                      value: totalFlashcards.toString(),
-                    ),
-                  ],
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Row(
+                    children: [
+                      _StatChip(label: "Decks", value: decks.length.toString()),
+                      const SizedBox(width: 12),
+                      _StatChip(
+                        label: "Flashcards",
+                        value: totalFlashcards.toString(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                  itemCount: entries.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return _FlashcardListTile(
-                      deck: entry.deck,
-                      flashcard: entry.flashcard,
-                      index: index + 1,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                FlashcardViewerScreen(deck: entry.deck),
-                          ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                    child: GridView.builder(
+                      itemCount: decks.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        mainAxisExtent: 220,
+                      ),
+                      itemBuilder: (context, index) {
+                        final deck = decks[index];
+                        return DeckGridCard(
+                          deck: deck,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    FlashcardViewerScreen(deck: deck),
+                              ),
+                            );
+                          },
+                          onDelete: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Hapus deck'),
+                                content: const Text(
+                                  'Apakah Anda yakin ingin menghapus deck ini? Tindakan ini tidak dapat dibatalkan.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
+                                    child: const Text('Batal'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
+                                    child: const Text('Hapus'),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm != true) return;
+
+                            try {
+                              await widget.repository.deleteDeck(deck.id);
+                              _changed = true;
+                              setState(() {
+                                _decksFuture = widget.repository
+                                    .fetchAllDecks();
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          },
+                          onTitleChanged: (newTitle) async {
+                            try {
+                              await widget.repository.updateDeckTitle(
+                                deck.id,
+                                newTitle,
+                              );
+                              _changed = true;
+                              setState(() {
+                                _decksFuture = widget.repository
+                                    .fetchAllDecks();
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          },
                         );
                       },
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  List<_FlashcardEntry> _flattenFlashcards(List<FlashcardDeckEntity> decks) {
-    final entries = <_FlashcardEntry>[];
-
-    for (final deck in decks) {
-      for (final flashcard in deck.flashcards) {
-        entries.add(_FlashcardEntry(deck: deck, flashcard: flashcard));
-      }
-    }
-
-    return entries;
-  }
-}
-
-class _FlashcardEntry {
-  final FlashcardDeckEntity deck;
-  final FlashcardEntity flashcard;
-
-  const _FlashcardEntry({required this.deck, required this.flashcard});
-}
-
-class _FlashcardListTile extends StatelessWidget {
-  final FlashcardDeckEntity deck;
-  final FlashcardEntity flashcard;
-  final int index;
-  final VoidCallback onTap;
-
-  const _FlashcardListTile({
-    required this.deck,
-    required this.flashcard,
-    required this.index,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE4E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      "#$index",
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    deck.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                flashcard.front,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                flashcard.back,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
-                ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
       ),
     );

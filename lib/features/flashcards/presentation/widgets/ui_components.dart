@@ -198,18 +198,53 @@ class _DashedBorderPainter extends CustomPainter {
   }
 }
 
-class DeckGridCard extends StatelessWidget {
+class DeckGridCard extends StatefulWidget {
   final FlashcardDeckEntity deck;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+  final ValueChanged<String>? onTitleChanged;
 
-  const DeckGridCard({required this.deck, required this.onTap, super.key});
+  const DeckGridCard({
+    required this.deck,
+    this.onTap,
+    this.onDelete,
+    this.onTitleChanged,
+    super.key,
+  });
+
+  @override
+  State<DeckGridCard> createState() => _DeckGridCardState();
+}
+
+class _DeckGridCardState extends State<DeckGridCard> {
+  late TextEditingController _controller;
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.deck.title);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _saveTitle() {
+    final newTitle = _controller.text.trim();
+    if (newTitle.isEmpty) return;
+    widget.onTitleChanged?.call(newTitle);
+    setState(() => _editing = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final coverImagePath = deck.coverImagePath;
+    final coverImagePath = widget.deck.coverImagePath;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Material(
@@ -262,29 +297,27 @@ class DeckGridCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      left: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.42),
+                    if (widget.onDelete != null)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: InkWell(
+                          onTap: widget.onDelete,
                           borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'SCIENCE',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                              ),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.42),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -303,14 +336,54 @@ class DeckGridCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        deck.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF111827),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _editing
+                                ? TextField(
+                                    controller: _controller,
+                                    maxLines: 2,
+                                    decoration: const InputDecoration(
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onSubmitted: (_) => _saveTitle(),
+                                  )
+                                : Text(
+                                    widget.deck.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF111827),
+                                        ),
+                                  ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (widget.onTitleChanged != null)
+                            IconButton(
+                              onPressed: () {
+                                if (_editing) {
+                                  _saveTitle();
+                                } else {
+                                  setState(() => _editing = true);
+                                }
+                              },
+                              icon: Icon(
+                                _editing ? Icons.check : Icons.edit,
+                                size: 18,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
                       ),
                       Row(
                         children: [
@@ -323,7 +396,7 @@ class DeckGridCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '${deck.flashcards.length} cards',
+                            '${widget.deck.flashcards.length} cards',
                             style: Theme.of(context).textTheme.labelSmall
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface

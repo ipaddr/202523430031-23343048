@@ -60,7 +60,7 @@ class FlashcardDeckModel {
 
   factory FlashcardDeckModel.fromEntity(FlashcardDeckEntity entity) {
     return FlashcardDeckModel(
-      id: entity.id,
+      id: entity.id == 0 ? Isar.autoIncrement : entity.id,
       title: entity.title,
       coverImagePath: entity.coverImagePath,
     );

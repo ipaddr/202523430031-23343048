@@ -43,6 +43,39 @@ class FlashcardDeckRepositoryImpl implements FlashcardDeckRepository {
     });
   }
 
+  @override
+  Future<void> deleteDeck(int id) async {
+    await _isar.writeTxn(() async {
+      final deck = await _isar.flashcardDeckModels.get(id);
+      if (deck == null) return;
+
+      await deck.flashcards.load();
+      final flashcardModels = deck.flashcards.toList();
+      final flashcardIds = flashcardModels
+          .map((f) => f.id)
+          .where((i) => i != 0)
+          .toList();
+
+      // Remove links and delete deck
+      deck.flashcards.clear();
+      await _isar.flashcardDeckModels.delete(id);
+
+      if (flashcardIds.isNotEmpty) {
+        await _isar.flashcardModels.deleteAll(flashcardIds);
+      }
+    });
+  }
+
+  @override
+  Future<void> updateDeckTitle(int id, String title) async {
+    await _isar.writeTxn(() async {
+      final deck = await _isar.flashcardDeckModels.get(id);
+      if (deck == null) return;
+      deck.title = title;
+      await _isar.flashcardDeckModels.put(deck);
+    });
+  }
+
   List<FlashcardEntity> _dedupeFlashcards(List<FlashcardEntity> flashcards) {
     final deduped = <FlashcardEntity>[];
     final seen = <String>{};
