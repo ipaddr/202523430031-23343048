@@ -21,8 +21,7 @@ class QuizController {
       _quizzes.where((quiz) => quiz.isCorrect == true).length;
 
   bool get isCompleted =>
-      _quizzes.isNotEmpty &&
-      _quizzes.every((quiz) => quiz.selectedAnswer != null);
+      _quizzes.isNotEmpty && _quizzes.every((quiz) => quiz.submitted == true);
 
   void reset() {
     _quizzes = _buildQuiz();
@@ -32,11 +31,8 @@ class QuizController {
     if (index < 0 || index >= _quizzes.length) {
       return;
     }
-
     final quiz = _quizzes[index];
-    if (quiz.selectedAnswer != null) {
-      return;
-    }
+    if (quiz.submitted) return;
 
     _quizzes[index] = quiz.copyWith(
       selectedAnswer: answer,
@@ -48,15 +44,27 @@ class QuizController {
     if (index < 0 || index >= _quizzes.length) {
       return;
     }
-
     final quiz = _quizzes[index];
-    if (quiz.selectedAnswer != null) {
-      return;
-    }
+    if (quiz.submitted) return;
 
     _quizzes[index] = quiz.copyWith(
       selectedAnswer: skippedAnswer,
       isCorrect: false,
+      submitted: true,
+    );
+  }
+
+  void submitAnswer(int index) {
+    if (index < 0 || index >= _quizzes.length) return;
+
+    final quiz = _quizzes[index];
+    if (quiz.submitted) return;
+
+    _quizzes[index] = quiz.copyWith(
+      submitted: true,
+      isCorrect:
+          quiz.selectedAnswer != null &&
+          quiz.selectedAnswer == quiz.correctAnswer,
     );
   }
 

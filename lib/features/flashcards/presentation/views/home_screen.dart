@@ -290,6 +290,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return const SizedBox.shrink();
                     }
 
+                    // Show only the two most recent decks in "Recently Generated".
+                    final recentDecks = [...decks];
+                    recentDecks.sort((a, b) => b.id.compareTo(a.id));
+                    final displayedDecks = recentDecks.take(2).toList();
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -337,7 +342,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 12),
                         GridView.builder(
-                          itemCount: decks.length,
+                          // Use only the latest two decks for the preview.
+                          itemCount: displayedDecks.length,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
@@ -348,7 +354,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 mainAxisExtent: 220,
                               ),
                           itemBuilder: (context, index) {
-                            final deck = decks[index];
+                            final deck = displayedDecks[index];
                             return DeckGridCard(
                               deck: deck,
                               onTap: () {
@@ -436,6 +442,10 @@ class _DeckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasImage =
+        deck.coverImagePath != null &&
+        deck.coverImagePath!.isNotEmpty &&
+        File(deck.coverImagePath!).existsSync();
     final createdAt = DateTime.now().subtract(Duration(days: deck.id * 3));
 
     return Material(
@@ -468,17 +478,40 @@ class _DeckCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withOpacity(0.2),
+                  if (hasImage)
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(deck.coverImagePath!),
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.layers_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.layers_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.layers_rounded,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(

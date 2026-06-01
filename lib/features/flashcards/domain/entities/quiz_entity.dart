@@ -4,6 +4,7 @@ class QuizEntity {
   final String correctAnswer;
   final String? selectedAnswer;
   final bool? isCorrect;
+  final bool submitted;
 
   const QuizEntity({
     required this.question,
@@ -11,6 +12,7 @@ class QuizEntity {
     required this.correctAnswer,
     required this.selectedAnswer,
     required this.isCorrect,
+    this.submitted = false,
   });
 
   QuizEntity copyWith({
@@ -19,6 +21,7 @@ class QuizEntity {
     String? correctAnswer,
     String? selectedAnswer,
     bool? isCorrect,
+    bool? submitted,
   }) {
     return QuizEntity(
       question: question ?? this.question,
@@ -26,6 +29,7 @@ class QuizEntity {
       correctAnswer: correctAnswer ?? this.correctAnswer,
       selectedAnswer: selectedAnswer ?? this.selectedAnswer,
       isCorrect: isCorrect ?? this.isCorrect,
+      submitted: submitted ?? this.submitted,
     );
   }
 }

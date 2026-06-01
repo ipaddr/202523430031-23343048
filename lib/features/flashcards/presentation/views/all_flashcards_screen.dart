@@ -18,6 +18,7 @@ class AllFlashcardsScreen extends StatefulWidget {
 class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
   late Future<List<FlashcardDeckEntity>> _decksFuture;
   bool _changed = false;
+  _SortOption _sort = _SortOption.dateDesc;
 
   @override
   void initState() {
@@ -55,7 +56,7 @@ class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
               );
             }
 
-            final decks = snapshot.data ?? <FlashcardDeckEntity>[];
+            var decks = snapshot.data ?? <FlashcardDeckEntity>[];
             final totalFlashcards = decks.fold<int>(
               0,
               (prev, deck) => prev + deck.flashcards.length,
@@ -68,6 +69,23 @@ class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
                 message:
                     "Buat deck pertama dari halaman utama, lalu semua flashcard akan muncul di sini.",
               );
+            }
+
+            // Apply sorting based on selected option
+            decks = List.of(decks);
+            switch (_sort) {
+              case _SortOption.titleAsc:
+                decks.sort((a, b) => a.title.compareTo(b.title));
+                break;
+              case _SortOption.titleDesc:
+                decks.sort((a, b) => b.title.compareTo(a.title));
+                break;
+              case _SortOption.dateAsc:
+                decks.sort((a, b) => a.id.compareTo(b.id));
+                break;
+              case _SortOption.dateDesc:
+                decks.sort((a, b) => b.id.compareTo(a.id));
+                break;
             }
 
             final size = MediaQuery.sizeOf(context);
@@ -85,6 +103,41 @@ class _AllFlashcardsScreenState extends State<AllFlashcardsScreen> {
                         label: "Flashcards",
                         value: totalFlashcards.toString(),
                       ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Row(
+                    children: [
+                      const Text('Sort by:'),
+                      const SizedBox(width: 12),
+                      DropdownButton<_SortOption>(
+                        value: _sort,
+                        onChanged: (v) {
+                          if (v == null) return;
+                          setState(() => _sort = v);
+                        },
+                        items: const [
+                          DropdownMenuItem(
+                            value: _SortOption.dateDesc,
+                            child: Text('Date: Newest'),
+                          ),
+                          DropdownMenuItem(
+                            value: _SortOption.dateAsc,
+                            child: Text('Date: Oldest'),
+                          ),
+                          DropdownMenuItem(
+                            value: _SortOption.titleAsc,
+                            child: Text('Title: A → Z'),
+                          ),
+                          DropdownMenuItem(
+                            value: _SortOption.titleDesc,
+                            child: Text('Title: Z → A'),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
                     ],
                   ),
                 ),
@@ -274,3 +327,5 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
+enum _SortOption { titleAsc, titleDesc, dateAsc, dateDesc }

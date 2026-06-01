@@ -74,6 +74,10 @@ class _QuizScreenState extends State<QuizScreen> {
       return;
     }
 
+    setState(() {
+      _controller.submitAnswer(_pageIndex);
+    });
+
     if (_pageIndex < _controller.totalQuestions - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 260),
@@ -223,101 +227,104 @@ class _QuizCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 8,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(18),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 8,
+                  height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(
-                                0.08,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Biology',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(Icons.info_outline, color: Colors.grey.shade400),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        quiz.question,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                    color: theme.colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      bottomLeft: Radius.circular(12),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Choose the most accurate description from the options below.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey.shade600,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.08,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Biology',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.grey.shade400,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          quiz.question,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          ...quiz.options.map((option) {
-            final isSelected = quiz.selectedAnswer == option;
-            final letter = String.fromCharCode(
-              65 + quiz.options.indexOf(option),
-            );
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: QuizOptionWidget(
-                optionLetter: letter,
-                text: option,
-                selected: isSelected,
-                onTap: quiz.selectedAnswer == null
-                    ? () => onOptionSelected(option)
-                    : null,
+            const SizedBox(height: 20),
+            Text(
+              'Choose the most accurate description from the options below.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade600,
               ),
-            );
-          }).toList(),
-        ],
+            ),
+            const SizedBox(height: 12),
+            ...quiz.options.map((option) {
+              final isSelected = quiz.selectedAnswer == option;
+              final letter = String.fromCharCode(
+                65 + quiz.options.indexOf(option),
+              );
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: QuizOptionWidget(
+                  optionLetter: letter,
+                  text: option,
+                  selected: isSelected,
+                  onTap: quiz.submitted ? null : () => onOptionSelected(option),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -341,107 +348,113 @@ class _QuizSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = total == 0 ? 0.0 : correct / total;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 24),
-      child: Column(
-        children: [
-          Text(
-            "Selesai!",
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Kamu telah menyelesaikan kuis.",
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 28),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.12),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 140,
-                  width: 140,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 12,
-                        backgroundColor: theme.colorScheme.primary.withOpacity(
-                          0.12,
-                        ),
-                        color: theme.colorScheme.secondary,
-                      ),
-                      Center(
-                        child: Text(
-                          "$correct/$total",
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "Skor kamu",
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              "Ringkasan Jawaban",
-              style: theme.textTheme.titleMedium?.copyWith(
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 40, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "Selesai!",
+              style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView.separated(
-              itemCount: quizzes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _QuizSummaryItem(
-                  theme: theme,
-                  index: index,
-                  quiz: quizzes[index],
-                );
-              },
+            const SizedBox(height: 12),
+            Text(
+              "Kamu telah menyelesaikan kuis.",
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          CustomButton(
-            label: "Ulangi Kuis",
-            icon: Icons.replay_rounded,
-            onPressed: onRestart,
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 140,
+                    width: 140,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 12,
+                          backgroundColor: theme.colorScheme.primary
+                              .withOpacity(0.12),
+                          color: theme.colorScheme.secondary,
+                        ),
+                        Center(
+                          child: Text(
+                            "$correct/$total",
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Skor kamu",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            CustomButton(
+              label: "Ulangi Kuis",
+              icon: Icons.replay_rounded,
+              onPressed: onRestart,
+            ),
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Ringkasan Jawaban",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Column(
+              children: [
+                ...List.generate(quizzes.length, (index) {
+                  return Column(
+                    children: [
+                      _QuizSummaryItem(
+                        theme: theme,
+                        index: index,
+                        quiz: quizzes[index],
+                      ),
+                      if (index < quizzes.length - 1)
+                        const SizedBox(height: 12),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

@@ -257,17 +257,10 @@ class _DeckGridCardState extends State<DeckGridCard> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (coverImagePath == null || coverImagePath.isEmpty)
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF173B66), Color(0xFF5B84B7)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                      )
-                    else
+                    // If a persisted cover image exists, show it; otherwise show gradient.
+                    if (coverImagePath != null &&
+                        coverImagePath.isNotEmpty &&
+                        File(coverImagePath).existsSync())
                       Image.file(
                         File(coverImagePath),
                         fit: BoxFit.cover,
@@ -282,6 +275,16 @@ class _DeckGridCardState extends State<DeckGridCard> {
                             ),
                           );
                         },
+                      )
+                    else
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF173B66), Color(0xFF5B84B7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
                       ),
                     Positioned.fill(
                       child: DecoratedBox(
@@ -340,18 +343,39 @@ class _DeckGridCardState extends State<DeckGridCard> {
                         children: [
                           Expanded(
                             child: _editing
-                                ? TextField(
-                                    controller: _controller,
-                                    maxLines: 2,
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 8,
-                                      ),
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    onSubmitted: (_) => _saveTitle(),
+                                ? Builder(
+                                    builder: (ctx) {
+                                      final titleStyle = Theme.of(
+                                        ctx,
+                                      ).textTheme.titleSmall;
+                                      final fontSize =
+                                          titleStyle?.fontSize ?? 16.0;
+                                      final lineHeight =
+                                          titleStyle?.height ?? 1.0;
+                                      final computedHeight =
+                                          fontSize * lineHeight + 12.0;
+
+                                      return SizedBox(
+                                        height: computedHeight,
+                                        child: TextField(
+                                          controller: _controller,
+                                          maxLines: 1,
+                                          style: titleStyle?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            isDense: true,
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                            border: InputBorder.none,
+                                          ),
+                                          onSubmitted: (_) => _saveTitle(),
+                                        ),
+                                      );
+                                    },
                                   )
                                 : Text(
                                     widget.deck.title,
@@ -404,6 +428,15 @@ class _DeckGridCardState extends State<DeckGridCard> {
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
+                          const Spacer(),
+                          Text(
+                            _formatDateFromId(widget.deck.id),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                          ),
                         ],
                       ),
                     ],
@@ -416,6 +449,26 @@ class _DeckGridCardState extends State<DeckGridCard> {
       ),
     );
   }
+}
+
+String _formatDateFromId(int id) {
+  final createdAt = DateTime.now().subtract(Duration(days: id * 3));
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  final month = months[createdAt.month - 1];
+  return "${createdAt.day} $month ${createdAt.year}";
 }
 
 class QuizOptionWidget extends StatelessWidget {

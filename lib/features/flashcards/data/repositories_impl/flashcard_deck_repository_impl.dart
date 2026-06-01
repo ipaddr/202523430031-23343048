@@ -1,3 +1,4 @@
+import "dart:io";
 import "package:isar/isar.dart";
 
 import "../../domain/entities/flashcard_deck_entity.dart";
@@ -18,7 +19,21 @@ class FlashcardDeckRepositoryImpl implements FlashcardDeckRepository {
     final entities = <FlashcardDeckEntity>[];
     for (final deck in decks) {
       await deck.flashcards.load();
-      entities.add(deck.toEntity(loadedFlashcards: deck.flashcards.toList()));
+      var entity = deck.toEntity(loadedFlashcards: deck.flashcards.toList());
+      // Validate persisted cover image path — if file is missing, clear it to
+      // avoid showing a stale path elsewhere in the app.
+      if (entity.coverImagePath != null) {
+        final f = File(entity.coverImagePath!);
+        if (!f.existsSync()) {
+          entity = FlashcardDeckEntity(
+            id: entity.id,
+            title: entity.title,
+            coverImagePath: null,
+            flashcards: entity.flashcards,
+          );
+        }
+      }
+      entities.add(entity);
     }
 
     return entities;

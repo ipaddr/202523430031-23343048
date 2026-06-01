@@ -1,6 +1,8 @@
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:image_picker/image_picker.dart";
 import "package:isar/isar.dart";
+import "dart:io";
+import "package:path_provider/path_provider.dart";
 
 import "../../data/repositories_impl/ai_repository_impl.dart";
 import "../../data/repositories_impl/flashcard_deck_repository_impl.dart";
@@ -93,14 +95,47 @@ class FlashcardCreationNotifier extends StateNotifier<FlashcardCreationState> {
       final deck = FlashcardDeckEntity(
         id: 0,
         title: title,
-        coverImagePath: images.first.path,
+        coverImagePath: (() {
+          // We'll attempt to copy the first image into app documents to
+          // ensure it's persisted and available for previews.
+          return null;
+        })(),
         flashcards: flashcards,
       );
-      final savedId = await _saveFlashcardDeckUseCase.execute(deck);
+      // Try to persist the cover image into app storage before saving.
+      String? coverPath;
+      try {
+        if (images.isNotEmpty) {
+          final src = File(images.first.path);
+          if (await src.exists()) {
+            final appDir = await getApplicationDocumentsDirectory();
+            final coversDir = Directory('${appDir.path}/flashcard_covers');
+            if (!await coversDir.exists())
+              await coversDir.create(recursive: true);
+            final ext = images.first.path.split('.').last;
+            final filename =
+                'cover_${DateTime.now().millisecondsSinceEpoch}.' + ext;
+            final dest = File('${coversDir.path}/$filename');
+            await src.copy(dest.path);
+            coverPath = dest.path;
+          }
+        }
+      } catch (_) {
+        coverPath = images.first.path;
+      }
+
+      final toSave = FlashcardDeckEntity(
+        id: deck.id,
+        title: deck.title,
+        coverImagePath: coverPath,
+        flashcards: deck.flashcards,
+      );
+
+      final savedId = await _saveFlashcardDeckUseCase.execute(toSave);
       final savedDeck = FlashcardDeckEntity(
         id: savedId,
         title: deck.title,
-        coverImagePath: deck.coverImagePath,
+        coverImagePath: coverPath,
         flashcards: deck.flashcards,
       );
 
